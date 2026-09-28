@@ -15,3 +15,4 @@ echo.
 echo Backend API: http://localhost:5000/api
 echo Frontend:    http://localhost:5173
 pause
+
