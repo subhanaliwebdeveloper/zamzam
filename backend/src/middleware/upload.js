@@ -1,4 +1,5 @@
 const multer = require('multer');
+const maxFileSize = process.env.VERCEL ? 4 * 1024 * 1024 : 10 * 1024 * 1024;
 
 // Memory storage to handle file buffer before uploading to Cloudinary
 const storage = multer.memoryStorage();
@@ -14,7 +15,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: maxFileSize
   },
   fileFilter: fileFilter
 });

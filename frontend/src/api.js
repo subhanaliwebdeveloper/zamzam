@@ -1,4 +1,4 @@
-const API = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/+$/, "");
+const API = (import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "/api")).replace(/\/+$/, "");
 
 function getAuthHeaders() {
   const token = localStorage.getItem("zzc_token");

@@ -54,6 +54,12 @@ const defaultProducts = [
 ];
 
 async function seedData() {
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+
+  if (isProduction && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
+    throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required in production.');
+  }
+
   try {
     const adminEmail = (process.env.ADMIN_EMAIL || 'admin@zamzamcafe.com').trim().toLowerCase();
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
@@ -75,9 +81,7 @@ async function seedData() {
       console.log(`✅ Default admin account created with email: ${adminEmail}`);
     } else {
       if (existingAdmin.role !== 'ADMIN') {
-        existingAdmin.role = 'ADMIN';
-        await existingAdmin.save();
-        console.log(`✅ Updated account (${adminEmail}) role to ADMIN.`);
+        throw new Error(`The configured admin email (${adminEmail}) belongs to a non-admin account.`);
       } else {
         console.log(`ℹ️  Admin account (${adminEmail}) verified with ADMIN role.`);
       }

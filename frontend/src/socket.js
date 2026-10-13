@@ -1,10 +1,12 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.DEV ? "http://localhost:5000" : "");
 
 let socketInstance = null;
 
 export function getSocket() {
+  if (!SOCKET_URL) return null;
+
   if (!socketInstance) {
     socketInstance = io(SOCKET_URL, {
       reconnection: true,
@@ -15,13 +17,6 @@ export function getSocket() {
       transports: ["websocket", "polling"]
     });
 
-    socketInstance.on("connect", () => {
-      // Socket connected
-    });
-
-    socketInstance.on("connect_error", (error) => {
-      // Connect error logged if needed
-    });
   }
   return socketInstance;
 }

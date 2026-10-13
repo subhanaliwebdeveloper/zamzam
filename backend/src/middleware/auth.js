@@ -1,7 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'zamzam_secret_jwt_key_2026_super_secure';
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? '' : 'local-development-jwt-secret');
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required in production.');
+}
 
 /**
  * Generate a JWT token for a user

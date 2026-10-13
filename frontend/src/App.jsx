@@ -3,6 +3,8 @@ import { getProducts, createOrder, getOrdersByPhone, createProduct, updateProduc
 import { getSession, login, logout, register } from "./auth";
 import { getSocket, playNotificationSound } from "./socket";
 
+const maxImageSize = import.meta.env.DEV ? 10 * 1024 * 1024 : 4 * 1024 * 1024;
+
 const fallbackProducts = [
   { id: 1, name: "Chicken Burger", description: "Juicy chicken burger with fresh salad.", price: 650, category: "Burgers", imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80", available: true },
   { id: 2, name: "Zinger Burger", description: "Crispy zinger chicken burger.", price: 750, category: "Burgers", imageUrl: "https://images.unsplash.com/photo-1553979459-d2229ba7433a?auto=format&fit=crop&w=900&q=80", available: true },
@@ -68,6 +70,7 @@ export default function App() {
   // Real-time notifications via Socket.io
   useEffect(() => {
     const socket = getSocket();
+    if (!socket) return;
 
     const handleNewProduct = async (newProduct) => {
       setNotice(`New item added: ${newProduct?.name || "New product"} 🎉`);
@@ -754,7 +757,7 @@ function AdminProducts({products,setProducts}) {
   async function chooseImage(file){
     if(!file) return;
     if(!file.type.startsWith("image/")) { setMsg("Please select an image file."); return; }
-    if(file.size > 10*1024*1024) { setMsg("Image must be 10MB or smaller."); return; }
+    if(file.size > maxImageSize) { setMsg(`Image must be ${maxImageSize / 1024 / 1024}MB or smaller.`); return; }
     setUploading(true);
     setMsg("Uploading image to Cloudinary...");
     try{
@@ -801,23 +804,40 @@ function AdminProducts({products,setProducts}) {
     <label>Name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label>
     <label>Price (Rs.)<input required type="number" min="0" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/>
     </label></div><label>Category<input placeholder="Burgers, Pizza, Drinks..." value={form.category} onChange={e=>setForm({...form,category:e.target.value})}/>
-    </label><label>Product image<div className="image-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();chooseImage(e.dataTransfer.files?.[0])}}>{form.imageUrl?<img src={form.imageUrl} alt="Preview"/>:<div className="drop-copy"><span className="upload-icon">📷</span><strong>{uploading ? "Uploading to Cloudinary..." : "Drag & drop an image here"}</strong><span>{uploading ? "Please wait..." : "or choose an image from your computer"}</span><label className="upload-btn secondary">{uploading ? "Uploading..." : "Choose Image"}<input hidden disabled={uploading} type="file" accept="image/*" onChange={e=>chooseImage(e.target.files?.[0])}/></label><small>JPG, PNG, WEBP • max 10MB</small></div>}</div>{form.imageUrl&&<div className="image-actions"><label className="upload-btn secondary">{uploading ? "Uploading..." : "Change Image"}<input hidden disabled={uploading} type="file" accept="image/*" onChange={e=>chooseImage(e.target.files?.[0])}/></label><button type="button" className="secondary" onClick={()=>setForm(f=>({...f,imageUrl:""}))}>Remove</button></div>}</label><label>Description<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><label className="check"><input type="checkbox" checked={form.available} onChange={e=>setForm({...form,available:e.target.checked})}/> Available for customers</label>{msg&&<p className={msg.toLowerCase().includes("success")?"success":"error"}>{msg}</p>}<button className="primary" disabled={saving || uploading}>{saving?"Saving...":editing?"Update product":"Add product"}</button>{editing&&<button type="button" className="secondary" onClick={()=>{setEditing(null);setForm(blank);setMsg("")}}>Cancel</button>}</form></div><div className="admin-products"><div className="admin-form-head"><div><span className="eyebrow">YOUR CATALOG</span><h2>Products</h2></div></div>{products.map(p=><div className="admin-product" key={p.id || p._id || `${p.name}-${p.price}`}><img src={p.imageUrl||"https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=300&q=80"}/><div><b>{p.name}</b><small>{p.category||"Uncategorized"} • {money(p.price)}</small></div><button type="button" onClick={()=>edit(p)}>Edit</button><button type="button" className="danger" onClick={()=>remove(p.id)}>Delete</button></div>)}{!products.length&&<p className="muted">No products yet.</p>}</div></section>;
+    </label><label>Product image<div className="image-drop" onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();chooseImage(e.dataTransfer.files?.[0])}}>{form.imageUrl?<img src={form.imageUrl} alt="Preview"/>:<div className="drop-copy"><span className="upload-icon">📷</span><strong>{uploading ? "Uploading to Cloudinary..." : "Drag & drop an image here"}</strong><span>{uploading ? "Please wait..." : "or choose an image from your computer"}</span><label className="upload-btn secondary">{uploading ? "Uploading..." : "Choose Image"}<input hidden disabled={uploading} type="file" accept="image/*" onChange={e=>chooseImage(e.target.files?.[0])}/></label><small>JPG, PNG, WEBP • max {maxImageSize / 1024 / 1024}MB</small></div>}</div>{form.imageUrl&&<div className="image-actions"><label className="upload-btn secondary">{uploading ? "Uploading..." : "Change Image"}<input hidden disabled={uploading} type="file" accept="image/*" onChange={e=>chooseImage(e.target.files?.[0])}/></label><button type="button" className="secondary" onClick={()=>setForm(f=>({...f,imageUrl:""}))}>Remove</button></div>}</label><label>Description<textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label><label className="check"><input type="checkbox" checked={form.available} onChange={e=>setForm({...form,available:e.target.checked})}/> Available for customers</label>{msg&&<p className={msg.toLowerCase().includes("success")?"success":"error"}>{msg}</p>}<button className="primary" disabled={saving || uploading}>{saving?"Saving...":editing?"Update product":"Add product"}</button>{editing&&<button type="button" className="secondary" onClick={()=>{setEditing(null);setForm(blank);setMsg("")}}>Cancel</button>}</form></div><div className="admin-products"><div className="admin-form-head"><div><span className="eyebrow">YOUR CATALOG</span><h2>Products</h2></div></div>{products.map(p=><div className="admin-product" key={p.id || p._id || `${p.name}-${p.price}`}><img src={p.imageUrl||"https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=300&q=80"}/><div><b>{p.name}</b><small>{p.category||"Uncategorized"} • {money(p.price)}</small></div><button type="button" onClick={()=>edit(p)}>Edit</button><button type="button" className="danger" onClick={()=>remove(p.id)}>Delete</button></div>)}{!products.length&&<p className="muted">No products yet.</p>}</div></section>;
 }
 
 function AdminOrders({onClearUnread}) {
   const [orders,setOrders]=useState([]); const [err,setErr]=useState("");
 
   useEffect(() => {
-    getOrders().then(setOrders).catch(() => setErr("Could not load orders. Please try again in a moment."));
+    let active = true;
+    const loadOrders = () => {
+      getOrders()
+        .then((latestOrders) => {
+          if (active) {
+            setOrders(latestOrders);
+            setErr("");
+          }
+        })
+        .catch(() => {
+          if (active) setErr("Could not load orders. Please try again in a moment.");
+        });
+    };
+
+    loadOrders();
+    const refreshTimer = setInterval(loadOrders, 5000);
 
     const socket = getSocket();
     const handleRealtimeOrder = (newOrder) => {
       setOrders((prev) => [newOrder, ...prev.filter(o => o.id !== newOrder.id && o._id !== newOrder.id)]);
     };
 
-    socket.on("new_order", handleRealtimeOrder);
+    socket?.on("new_order", handleRealtimeOrder);
     return () => {
-      socket.off("new_order", handleRealtimeOrder);
+      active = false;
+      clearInterval(refreshTimer);
+      socket?.off("new_order", handleRealtimeOrder);
     };
   }, []);
 
